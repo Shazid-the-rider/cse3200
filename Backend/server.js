@@ -1,3 +1,4 @@
+require("dotenv").config();
 const connectDB = require('./config/connectDB')
 const uploadProductRoute = require('./routes/admin/uploadProductRoute')
 const getAllProductRoute = require('./routes/user/getAllProductRoute')
