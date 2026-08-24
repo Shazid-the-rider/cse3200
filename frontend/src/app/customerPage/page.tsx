@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
-
+import Link from "next/link";
 interface Product {
   productId: string;
   productName: string;
@@ -67,111 +67,133 @@ setProducts(data.products);
       </div>
 
       {/* Products */}
-      <div className="max-w-7xl mx-auto px-6 py-10">
+<div className="max-w-7xl mx-auto px-6 py-10">
 
-        <h2 className="text-2xl font-bold mb-6">
-          Our Products
-        </h2>
+  <h2 className="text-2xl font-bold mb-6">
+    Our Products
+  </h2>
 
-        {products.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-gray-500">
-              No products found
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+  {products.length === 0 ? (
+    <div className="text-center py-20">
+      <p className="text-gray-500">
+        No products found
+      </p>
+    </div>
+  ) : (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
-            {products.map((product) => (
+      {products.map((product) => {
+        
+        // Debug
+        console.log("PRODUCT:", product);
+        console.log("IMAGES:", product.images);
 
-              <div
-                key={product.productId}
-                className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition"
-              >
+        return (
+          <div
+            key={product.productId}
+            className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition"
+          >
 
-                {/* Image */}
-                <div className="w-full h-64 bg-gray-100 flex items-center justify-center">
-                  {product.images?.length > 0 ? (
-                    <Image
-                      src={product.images[0]}
-                      alt={product.productName}
-                      width={400}
-                      height={300}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <p className="text-gray-400">
-                      No Image
-                    </p>
-                  )}
-                </div>
+            {/* Image */}
+            {/* Image */}
+<div className="w-full h-64 bg-gray-100 flex items-center justify-center">
 
-                {/* Product Info */}
-                <div className="p-5">
+  {product.images?.length > 0 ? (
+    product.images[0].startsWith("http") ||
+    product.images[0].startsWith("/") ? (
+      
+      <Image
+        src={product.images[0]}
+        alt={product.productName}
+       width={400}
+  height={300}
+        className="w-full h-full object-cover"
+        priority={product.productId === products[0]?.productId}
+      />
 
-                  <h3 className="text-xl font-bold text-gray-800">
-                    {product.productName}
-                  </h3>
+    ) : (
 
-                  <p className="text-sm text-gray-400 mt-1">
-                    ID: {product.productId}
-                  </p>
+      <p className="text-gray-400">
+        Invalid Image: {product.images[0]}
+      </p>
 
-                  {/* Rating */}
-                  <div className="flex items-center gap-2 mt-3">
+    )
+  ) : (
 
-                    <span className="text-yellow-500">
-                      ★
-                    </span>
+    <p className="text-gray-400">
+      No Image
+    </p>
 
-                    <span className="font-semibold">
-                      {product.ratings}
-                    </span>
+  )}
 
-                    <span className="text-gray-400">
-                      ({product.reviews} reviews)
-                    </span>
+</div>
 
-                  </div>
+            {/* Product Info */}
+            <div className="p-5">
 
-                  {/* Description */}
-                  <p className="text-gray-600 mt-3 line-clamp-2">
-                    {product.description}
-                  </p>
+              <h3 className="text-xl font-bold text-gray-800">
+                {product.productName}
+              </h3>
 
-                  {/* Stock */}
-                  <div className="mt-4">
+              <p className="text-sm text-gray-400 mt-1">
+                ID: {product.productId}
+              </p>
 
-                    {product.stock > 0 ? (
-                      <span className="text-green-600 font-semibold">
-                        In Stock ({product.stock})
-                      </span>
-                    ) : (
-                      <span className="text-red-600 font-semibold">
-                        Out of Stock
-                      </span>
-                    )}
+              {/* Rating */}
+              <div className="flex items-center gap-2 mt-3">
 
-                  </div>
+                <span className="text-yellow-500">
+                  ★
+                </span>
 
-                  {/* Button */}
-                  <button
-                    disabled={product.stock === 0}
-                    className="w-full mt-5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-3 rounded-xl font-semibold"
-                  >
-                    View Product
-                  </button>
+                <span className="font-semibold">
+                  {product.ratings}
+                </span>
 
-                </div>
+                <span className="text-gray-400">
+                  ({product.reviews} reviews)
+                </span>
 
               </div>
 
-            ))}
+              {/* Description */}
+              <p className="text-gray-600 mt-3 line-clamp-2">
+                {product.description}
+              </p>
+
+              {/* Stock */}
+              <div className="mt-4">
+
+                {product.stock > 0 ? (
+                  <span className="text-green-600 font-semibold">
+                    In Stock ({product.stock})
+                  </span>
+                ) : (
+                  <span className="text-red-600 font-semibold">
+                    Out of Stock
+                  </span>
+                )}
+
+              </div>
+
+              {/* Button */}
+              <Link
+  href={`/customerPage/${product.productId}`}
+  className="block w-full mt-5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-3 rounded-xl font-semibold text-center"
+>
+  View Product
+</Link>
+
+            </div>
 
           </div>
-        )}
+        );
+      })}
 
-      </div>
+    </div>
+  )}
+
+</div>
     </div>
   );
 }
