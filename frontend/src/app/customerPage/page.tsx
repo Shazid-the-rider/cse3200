@@ -1,9 +1,13 @@
+
 "use client";
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+
 interface Product {
+  _id?: string;
   productId: string;
   productName: string;
   images: string[];
@@ -13,31 +17,36 @@ interface Product {
   stock: number;
 }
 
-export default function page() {
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+export default function CustomerPage() {
+    const searchParams = useSearchParams();
+  const adminId = searchParams.get("adminId");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch(
-          "http://localhost:5000/products/fetch"
-        );
+       const response = await fetch(
+  `${API_URL}/products/fetch?adminId=${encodeURIComponent(adminId || "")}`
+);
 
         if (!response.ok) {
-          throw new Error("Failed to fetch products");
+           const errorData = await response.json();
+
+  console.error("API Error:", response.status, errorData);
+
+  throw new Error(
+    errorData.message || `Failed to fetch products: ${response.status}`
+  );
         }
 
         const data = await response.json();
 
-
-console.log("API DATA:", data);
-console.log("PRODUCT:", data.products[0]);
-console.log("IMAGES:", data.products[0]?.images);
-
-
-setProducts(data.products);
-        setProducts(data.products || data);
+        setProducts(data.products || data || []);
       } catch (error) {
         console.error("Error fetching products:", error);
       } finally {
@@ -48,152 +57,198 @@ setProducts(data.products);
     fetchProducts();
   }, []);
 
+  const filteredProducts = products.filter((product) => {
+    const query = search.trim().toLowerCase();
+
+    return (
+      product.productName?.toLowerCase().includes(query) ||
+      product.productId?.toLowerCase().includes(query)
+    );
+  });
+
+  const getImageUrl = (image?: string) => {
+    if (!image) return "";
+
+    if (image.startsWith("http://") || image.startsWith("https://")) {
+      return image;
+    }
+
+    // Backend relative path, e.g. uploads/products/image.jpeg
+    const normalizedPath = image
+      .replace(/\\/g, "/")
+      .replace(/^\/+/, "");
+
+    return `${API_URL}/${normalizedPath}`;
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-lg">Loading products...</p>
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <p className="text-lg text-gray-600">Loading products...</p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-
       {/* Header */}
-      <div className="w-full py-6 px-6 bg-slate-700">
-        <h1 className="text-2xl font-bold text-white">
-          Customer Page
-        </h1>
-      </div>
+      <header className="bg-slate-800 px-6 py-6 shadow-md">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white">
+              Customer Page
+            </h1>
+            <p className="mt-1 text-sm text-slate-300">
+              Explore our products
+            </p>
+          </div>
+
+          <div className="w-full sm:max-w-md">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by product ID or name..."
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-gray-800 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-200"
+            />
+          </div>
+        </div>
+      </header>
 
       {/* Products */}
-<div className="max-w-7xl mx-auto px-6 py-10">
-
-  <h2 className="text-2xl font-bold mb-6">
-    Our Products
-  </h2>
-
-  {products.length === 0 ? (
-    <div className="text-center py-20">
-      <p className="text-gray-500">
-        No products found
-      </p>
-    </div>
-  ) : (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-
-      {products.map((product) => {
-        
-        // Debug
-        console.log("PRODUCT:", product);
-        console.log("IMAGES:", product.images);
-
-        return (
-          <div
-            key={product.productId}
-            className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition"
-          >
-
-            {/* Image */}
-            {/* Image */}
-<div className="w-full h-64 bg-gray-100 flex items-center justify-center">
-
-  {product.images?.length > 0 ? (
-    product.images[0].startsWith("http") ||
-    product.images[0].startsWith("/") ? (
-      
-      <Image
-        src={product.images[0]}
-        alt={product.productName}
-       width={400}
-  height={300}
-        className="w-full h-full object-cover"
-        priority={product.productId === products[0]?.productId}
-      />
-
-    ) : (
-
-      <p className="text-gray-400">
-        Invalid Image: {product.images[0]}
-      </p>
-
-    )
-  ) : (
-
-    <p className="text-gray-400">
-      No Image
-    </p>
-
-  )}
-
-</div>
-
-            {/* Product Info */}
-            <div className="p-5">
-
-              <h3 className="text-xl font-bold text-gray-800">
-                {product.productName}
-              </h3>
-
-              <p className="text-sm text-gray-400 mt-1">
-                ID: {product.productId}
-              </p>
-
-              {/* Rating */}
-              <div className="flex items-center gap-2 mt-3">
-
-                <span className="text-yellow-500">
-                  ★
-                </span>
-
-                <span className="font-semibold">
-                  {product.ratings}
-                </span>
-
-                <span className="text-gray-400">
-                  ({product.reviews} reviews)
-                </span>
-
-              </div>
-
-              {/* Description */}
-              <p className="text-gray-600 mt-3 line-clamp-2">
-                {product.description}
-              </p>
-
-              {/* Stock */}
-              <div className="mt-4">
-
-                {product.stock > 0 ? (
-                  <span className="text-green-600 font-semibold">
-                    In Stock ({product.stock})
-                  </span>
-                ) : (
-                  <span className="text-red-600 font-semibold">
-                    Out of Stock
-                  </span>
-                )}
-
-              </div>
-
-              {/* Button */}
-              <Link
-  href={`/customerPage/${product.productId}`}
-  className="block w-full mt-5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-3 rounded-xl font-semibold text-center"
->
-  View Product
-</Link>
-
-            </div>
-
+      <main className="mx-auto max-w-7xl px-6 py-10">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">
+              Our Products
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Browse and view product details
+            </p>
           </div>
-        );
-      })}
 
-    </div>
-  )}
+          <span className="rounded-full bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-700">
+            {filteredProducts.length} Products
+          </span>
+        </div>
 
-</div>
+        {filteredProducts.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-gray-300 bg-white py-20 text-center">
+            <p className="text-lg font-semibold text-gray-600">
+              {search ? "No matching products found" : "No products found"}
+            </p>
+            <p className="mt-2 text-sm text-gray-400">
+              Try another product name or ID.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {filteredProducts.map((product, index) => {
+              // First image is displayed on the product card
+              const firstImage = getImageUrl(product.images?.[0]);
+
+              return (
+                <article
+                  key={product._id || product.productId}
+                  className="group overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+                >
+                  {/* First Product Image */}
+                  <div className="relative h-64 overflow-hidden bg-gray-100">
+                    {firstImage ? (
+                      <img
+                        src={firstImage}
+                        alt={product.productName}
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                        loading={index === 0 ? "eager" : "lazy"}
+                        onError={(e) => {
+                          console.error(
+                            "Product image failed to load:",
+                            firstImage
+                          );
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-gray-400">
+                        No Image Available
+                      </div>
+                    )}
+
+                    <span
+                      className={`absolute left-3 top-3 rounded-full px-3 py-1 text-xs font-semibold ${
+                        product.stock > 0
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      {product.stock > 0 ? "In Stock" : "Out of Stock"}
+                    </span>
+
+                    {product.images?.length > 1 && (
+                      <span className="absolute bottom-3 right-3 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white">
+                        +{product.images.length - 1} photos
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Product Information */}
+                  <div className="p-5">
+                    <p className="mb-2 text-xs font-medium uppercase tracking-wider text-gray-400">
+                      ID: {product.productId}
+                    </p>
+
+                    <h3 className="line-clamp-1 text-xl font-bold text-gray-800">
+                      {product.productName}
+                    </h3>
+
+                    {/* Rating */}
+                    <div className="mt-3 flex items-center gap-2">
+                      <span className="text-lg text-amber-500">★</span>
+                      <span className="font-semibold text-gray-800">
+                        {product.ratings ?? 0}
+                      </span>
+                      <span className="text-sm text-gray-400">
+                        ({product.reviews ?? 0} reviews)
+                      </span>
+                    </div>
+
+                    {/* Description */}
+                    <p className="mt-3 line-clamp-2 min-h-10 text-sm leading-5 text-gray-500">
+                      {product.description || "No description available."}
+                    </p>
+
+                    {/* Stock */}
+                    <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
+                      <span className="text-sm text-gray-500">Availability</span>
+                      <span
+                        className={`text-sm font-semibold ${
+                          product.stock > 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {product.stock > 0
+                          ? `${product.stock} available`
+                          : "Out of stock"}
+                      </span>
+                    </div>
+
+                    {/* View Product */}
+                    <Link
+                      href={`/customerPage/${encodeURIComponent(
+    product.productId
+  )}?adminId=${encodeURIComponent(adminId || "")}`}
+                      className="mt-5 block w-full rounded-xl bg-blue-600 px-4 py-3 text-center font-semibold text-white transition hover:bg-blue-700"
+                    >
+                      View Product
+                    </Link>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </main>
     </div>
   );
 }

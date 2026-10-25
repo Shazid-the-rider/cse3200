@@ -1,13 +1,16 @@
+const fs = require("fs");
 const Product = require("../../models/productModel");
 const cloudinary = require("../../config/connectedCloudinary");
 
 const uploadProduct = async (req, res) => {
     try {
         const {
+             adminId,
             productId,
             productName,
             description,
             stock,
+              removedImages,
         } = req.body;
 
         console.log("Controller BODY:", req.body);
@@ -24,34 +27,20 @@ const uploadProduct = async (req, res) => {
         const imageUrls = [];
 
         // Upload images to Cloudinary
-        for (const file of req.files) {
+for (const file of req.files) {
+    const result = await cloudinary.uploader.upload(file.path, {
+        folder: "products",
+        resource_type: "image",
+    });
 
-            const result = await new Promise(
-                (resolve, reject) => {
+    imageUrls.push(result.secure_url);
 
-                    const stream =
-                        cloudinary.uploader.upload_stream(
-                            {
-                                folder: "products",
-                            },
-                            (error, result) => {
-                                if (error) {
-                                    reject(error);
-                                } else {
-                                    resolve(result);
-                                }
-                            }
-                        );
-
-                    stream.end(file.buffer);
-                }
-            );
-
-            imageUrls.push(result.secure_url);
-        }
-
+    // Delete temporary local file after successful upload
+    fs.unlinkSync(file.path);
+}
         // Save product in MongoDB
         const product = await Product.create({
+            adminId,
             productId,
             productName,
             images: imageUrls,

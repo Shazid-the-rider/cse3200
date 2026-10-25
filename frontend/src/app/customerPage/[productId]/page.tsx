@@ -1,5 +1,8 @@
-import Image from "next/image";
 
+import Link from "next/link";
+import ProductImageSlider from "./ProductImageSlider";
+import RatingsReviews from "./RatingReviews";
+import CustomerComments from "./CustomerComments";
 type Product = {
   productId: string;
   productName: string;
@@ -8,136 +11,222 @@ type Product = {
   ratings: number;
   reviews: number;
   stock: number;
+  adminId: string;
+   reviewEntries?: {
+    name?: string;
+    comment: string;
+    createdAt?: string | Date;
+  }[];
 };
 
-async function getProduct(productId: string): Promise<Product | null> {
-  const res = await fetch(
-    "http://localhost:5000/products/fetch",
-    {
-      cache: "no-store",
-    }
+async function getProduct(
+  productId: string,
+  adminId: string
+): Promise<Product | null> {
+  const API_URL =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+  const response = await fetch(
+    `${API_URL}/products/fetch?adminId=${encodeURIComponent(adminId)}`,
+    { cache: "no-store" }
   );
 
-  if (!res.ok) {
+  if (!response.ok) {
+    console.error("Failed to fetch products:", response.status);
     return null;
   }
 
-  const data = await res.json();
-
+  const data = await response.json();
   const products: Product[] = data.products || [];
+  const product =
+    products.find((item) => item.productId === productId) || null;
 
-  const product = products.find(
-    (item) => item.productId === productId
+  console.log("Product detail images:", product?.images);
+console.log("Product ID:", product?.productId);
+console.log("Images from API:", product?.images);
+  return (
+    products.find(
+      (item) => item.productId === productId
+    ) || null
   );
-
-  return product || null;
 }
 
 export default async function ProductDetails({
   params,
+  searchParams,
 }: {
   params: Promise<{ productId: string }>;
+  searchParams: Promise<{ adminId?: string }>;
 }) {
   const { productId } = await params;
+  const { adminId } = await searchParams;
 
-  const product = await getProduct(productId);
-
-  if (!product) {
+  if (!adminId) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500 text-xl">
-          Product not found
-        </p>
+      <div className="mx-auto max-w-4xl px-6 py-20 text-center">
+        <h1 className="text-2xl font-bold">
+          Admin ID পাওয়া যায়নি।
+        </h1>
+
+        <Link
+          href="/customerPage"
+          className="mt-4 inline-block text-blue-600 hover:underline"
+        >
+          Back to Products
+        </Link>
       </div>
     );
   }
 
+  let product: Product | null;
+
+  try {
+    product = await getProduct(productId, adminId);
+  } catch (error) {
+    console.error("Product fetch failed:", error);
+    product = null;
+  }
+
+  if (!product) {
+    return (
+      <div className="mx-auto max-w-4xl px-6 py-20 text-center">
+        <h1 className="text-2xl font-bold">
+          Product not found
+        </h1>
+
+        <p className="mt-2 text-gray-500">
+          এই Admin-এর অধীনে product পাওয়া যায়নি।
+        </p>
+
+        <Link
+          href="/customerPage"
+          className="mt-4 inline-block text-blue-600 hover:underline"
+        >
+          Back to Products
+        </Link>
+      </div>
+    );
+  }
+
+  const images = Array.isArray(product.images)
+    ? product.images.filter(
+        (image) =>
+          typeof image === "string" && image.trim() !== ""
+      )
+    : [];
+
   return (
-    <div className="max-w-6xl mx-auto px-6 py-10">
+    <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
+        {/* Product Image + Slider */}
+        <section>
+          <ProductImageSlider
+            images={images}
+            productName={product.productName}
+          />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+          {/* Rating and Reviews: Below Pictures */}
+          {/* Rating and Reviews + Customer Comments */}
+<div className="mt-6 w-300 grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
 
-        {/* Image */}
-        <div className="w-full h-[450px] bg-gray-100 rounded-2xl overflow-hidden flex items-center justify-center">
+  {/* Left Side: Rating and Review Form */}
+  <div className="rounded-2xl border border-gray-200 p-5">
+    <RatingsReviews
+      productId={product.productId}
+      adminId={adminId}
+      ratings={Number(product.ratings || 0)}
+      reviews={Number(product.reviews || 0)}
+      reviewEntries={product.reviewEntries || []}
+    />
+  </div>
 
-          {product.images?.length > 0 ? (
-            <Image
-              src={product.images[0]}
-              alt={product.productName}
-              width={600}
-              height={450}
-              className="w-full h-full object-cover"
-               style={{ width: "auto" }}
-              priority
-            />
-          ) : (
-            <p className="text-gray-400">
-              No Image
-            </p>
-          )}
+  {/* Right Side: All Customer Comments */}
+  <CustomerComments
+    reviewEntries={product.reviewEntries || []}
+  />
 
-        </div>
+</div>
+        </section>
 
         {/* Product Information */}
-        <div>
-
-          <p className="text-sm text-gray-400">
-            ID: {product.productId}
+        <section>
+          <p className="text-sm text-gray-500">
+            Admin ID: {product.adminId}
           </p>
 
-          <h1 className="text-4xl font-bold text-gray-800 mt-2">
+          <p className="mt-1 text-sm text-gray-500">
+            Product ID: {product.productId}
+          </p>
+
+          <h1 className="mt-3 text-3xl font-bold text-gray-900">
             {product.productName}
           </h1>
 
-          {/* Rating */}
-          <div className="flex items-center gap-2 mt-5">
-
-            <span className="text-yellow-500 text-xl">
-              ★
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <span className="text-yellow-500">
+              ★ {Number(product.ratings || 0).toFixed(1)}
             </span>
 
-            <span className="font-semibold">
-              {product.ratings}
+            <span className="text-sm text-gray-500">
+              ({product.reviews || 0} reviews)
             </span>
-
-            <span className="text-gray-400">
-              ({product.reviews} reviews)
-            </span>
-
           </div>
 
-          {/* Description */}
-          <p className="text-gray-600 mt-6 leading-7">
-            {product.description}
-          </p>
-
-          {/* Stock */}
           <div className="mt-6">
+            <h2 className="text-lg font-semibold">
+              Description
+            </h2>
 
-            {product.stock > 0 ? (
-              <span className="text-green-600 font-semibold">
-                In Stock ({product.stock})
-              </span>
-            ) : (
-              <span className="text-red-600 font-semibold">
-                Out of Stock
-              </span>
-            )}
-
+            <p className="mt-2 whitespace-pre-wrap leading-7 text-gray-600">
+              {product.description || "No description available."}
+            </p>
           </div>
 
-          {/* Button */}
-          <button
-            disabled={product.stock === 0}
-            className="w-full mt-8 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-4 rounded-xl font-semibold"
-          >
-            Add to Cart
-          </button>
+          <div className="mt-6">
+            <span className="font-semibold">Stock: </span>
 
-        </div>
+            <span
+              className={
+                product.stock > 0
+                  ? "text-green-600"
+                  : "text-red-600"
+              }
+            >
+              {product.stock > 0
+                ? `${product.stock} available`
+                : "Out of Stock"}
+            </span>
+          </div>
 
+          {/* Order Now */}
+         {/* Order Now */}
+<Link
+  href={`/customerPage/${encodeURIComponent(
+    product.productId
+  )}/order?adminId=${encodeURIComponent(adminId)}`}
+  aria-disabled={product.stock <= 0}
+  tabIndex={product.stock > 0 ? 0 : -1}
+  className={`mt-8 block w-full rounded-xl py-4 text-center font-semibold text-white shadow-md transition-all duration-200 ${
+    product.stock > 0
+      ? "bg-blue-600 hover:bg-blue-700 hover:shadow-lg active:scale-[0.98]"
+      : "pointer-events-none bg-gray-400"
+  }`}
+>
+  {product.stock > 0 ? "Order Now" : "Out of Stock"}
+</Link>
+
+{/* More Products - Centered Below Button */}
+<div className="mt-5 flex justify-center">
+  <Link
+    href={`/customerPage?adminId=${encodeURIComponent(adminId)}`}
+    className="inline-flex items-center gap-2 rounded-full border border-blue-600 px-6 py-3 font-semibold text-blue-600 shadow-sm transition-all duration-200 hover:bg-blue-600 hover:text-white hover:shadow-md active:scale-95"
+  >
+    <span>←</span>
+    <span>More Products</span>
+  </Link>
+</div>
+        </section>
       </div>
-
-    </div>
+    </main>
   );
 }
