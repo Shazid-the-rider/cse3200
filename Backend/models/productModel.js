@@ -10,7 +10,7 @@ const productSchema = new mongoose.Schema(
     productId: {
       type: String,
       required: true,
-      unique: true,
+      
       trim: true,
     },
 
@@ -103,7 +103,10 @@ const productSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
+productSchema.index(
+  { adminId: 1, productId: 1 },
+  { unique: true }
+);
 const Product = mongoose.model("Product", productSchema);
 
 module.exports = Product;

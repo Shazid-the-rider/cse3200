@@ -7,6 +7,30 @@ import Link from "next/link";
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
+interface Product {
+  _id: string;
+  adminId: string;
+  productId: string;
+  productName: string;
+  description: string;
+  stock: number | string;
+  images: string[];
+  ratings?: number;
+  reviews?: number;
+
+  reviewEntries?: {
+    name?: string;
+    comment: string;
+    createdAt?: string | Date;
+  }[];
+
+  ratingEntries?: {
+    rating: number;
+    reviewerToken: string;
+    createdAt?: string | Date;
+  }[];
+}
+
 export default function AdminPage() {
   const [adminId, setAdminId] = useState("");
   const [adminName, setAdminName] = useState("");
@@ -17,8 +41,8 @@ const [adminGmail, setAdminGmail] = useState("");
   const [stock, setStock] = useState("0");
   const [images, setImages] = useState<File[]>([]);
 const [search, setSearch] = useState("");
-const [products, setProducts] = useState<any[]>([]);
-const [selectedProduct, setSelectedProduct] = useState<any>(null);
+const [products, setProducts] = useState<Product[]>([]);
+const [selectedProduct, setSelectedProduct] =  useState<Product | null>(null);
 const [searchLoading, setSearchLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -68,7 +92,8 @@ useEffect(() => {
       );
 
       const data = await response.json();
-
+console.log("Upload status:", response.status);
+console.log("Upload response:", data);
       if (response.ok) {
         setProducts(data.products || []);
       }
@@ -330,15 +355,16 @@ console.log("Upload response:", data);
 
             <div>
               <h1 className="text-xl font-extrabold text-slate-900">
-                Shop<span className="text-emerald-700">Admin</span>
+                Online<span className="text-emerald-700">Shop</span>
               </h1>
               <p className="text-xs text-slate-500">
-                Product management   <Link href="/customerPage">Customer Page</Link>
+                Product management   
               </p>
             </div>
           </div>
 
-         <div className="flex items-center gap-3">
+       
+<div className="flex items-center gap-3">
   <Link
     href={`/customerPage?adminId=${encodeURIComponent(adminId || "")}`}
     className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-emerald-700"
@@ -349,7 +375,20 @@ console.log("Upload response:", data);
   <div className="rounded-xl bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-800">
     Admin: {adminId || "Loading..."}
   </div>
+
+  <button
+    type="button"
+    onClick={() => {
+      localStorage.removeItem("adminId");
+      localStorage.removeItem("admin");
+      window.location.href = "/loginPage";
+    }}
+    className="rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-700"
+  >
+    Logout
+  </button>
 </div>
+
         </div>
       </header>
 
