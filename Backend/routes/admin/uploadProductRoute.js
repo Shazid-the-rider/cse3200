@@ -13,6 +13,18 @@ const Admin = require("../../models/admin");
 );*/
 
 const Product = require("../../models/productModel");
+
+
+const {
+  forgotPassword,
+  resetPassword,
+} = require("../../controllers/admin/forgotPasswordController");
+
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
+
+
+
 //rating and reviews
 router.post("/products/reviews", async (req, res) => {
   try {

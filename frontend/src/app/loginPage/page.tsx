@@ -212,6 +212,16 @@ export default function AdminLoginPage() {
                   )}
                 </button>
               </form>
+              <div className="flex">
+                <div><span>Forgot Password?</span></div>
+                <div className="ml-45">
+  <Link href="/forgotPassword">Click here</Link>
+</div>
+
+
+
+              </div>
+              
 
               <div className="my-7 flex items-center gap-4">
                 <div className="h-px flex-1 bg-slate-200" />
